@@ -60,3 +60,4 @@ Thumbs.db
 
 # Python project metadata
 .python-version
+pyproject.toml
