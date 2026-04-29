@@ -1,10 +1,34 @@
 import torch
 import torch.nn as nn
 from torch.distributions import Normal
+import torch.nn.functional as F
+
+
+class individual_Critic(nn.Module):
+    def __init__(self, state_dim, action_dim, hidden_dim = 256):
+        super(individual_Critic, self).__init__()
+        self.l1 = nn.Linear(in_features = state_dim + action_dim, out_features = hidden_dim)
+        self.l2 = nn.Linear(in_features = hidden_dim, out_features = hidden_dim)
+        self.l3 = nn.Linear(in_features = hidden_dim, out_features = 1)
+
+    def forward(self, sa):
+        # sa --> concatenated state & action
+        x = F.relu(self.l1(sa))
+        x = F.relu(self.l2(x))
+        x = self.l3(x)
+        return x
+
+
+
 
 class Critic(nn.Module):
-    def __init__(self, state_dim, action_dim, max_action, hidden_dim = 256):
+    def __init__(self, state_dim, action_dim, max_action, hidden_dim = 256, num_critics = 10):
         super(Critic, self).__init__()
+
+        #######
+        # SAC #
+        #######
+        '''
         # Q1 architecture
         self.l1 = nn.Linear(in_features = state_dim + action_dim, out_features = hidden_dim)
         self.l2 = nn.Linear(in_features = hidden_dim, out_features = hidden_dim)
@@ -14,9 +38,25 @@ class Critic(nn.Module):
         self.l4 = nn.Linear(in_features = state_dim + action_dim, out_features = hidden_dim)
         self.l5 = nn.Linear(in_features = hidden_dim, out_features = hidden_dim)
         self.l6 = nn.Linear(in_features = hidden_dim, out_features = 1)
+        '''
+
+
+        ########
+        # REDQ #
+        ########
+        self.q_critics = nn.ModuleList(
+            [individual_Critic(state_dim, action_dim, hidden_dim) for _ in range(num_critics)]
+        )
+
+
+
 
     def forward(self, state, action):
         sa = torch.cat([state, action], dim = 1)
+        #######
+        # SAC #
+        #######
+        '''
         # Q1 forward
         x1 = self.l1(sa)
         x1 = nn.ReLU()(x1)
@@ -32,6 +72,20 @@ class Critic(nn.Module):
         q2 = self.l6(x2)
 
         return q1, q2
+        '''
+
+        ########
+        # REDQ #
+        ########
+        # Pass the state-action pair thorugh every critic in the ensemble and get Q-values
+        all_q_values = []
+        for q_net in self.q_critics:
+            q_value = q_net(sa)
+            all_q_values.append(q_value)
+        
+        # Stack all the tensor into a single tensor. Shape --> [num_critics, batch_size, 1]
+        all_q_values = torch.stack(all_q_values, dim=0)
+        return all_q_values
 
 
 
