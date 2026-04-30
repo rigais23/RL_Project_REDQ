@@ -13,8 +13,10 @@ import torch.nn.functional as F # compute directly without the need to create a
 
 
 class REDQ:
-    def __init__(self, state_dim, action_dim, max_action, device):
+    def __init__(self, state_dim, action_dim, max_action, device, num_critics=10, subset_size=2):  
+
         self.device = device
+        self.subset_size = subset_size 
         # Actor and Critic networks
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.critic = Critic(state_dim, action_dim, max_action).to(device)
@@ -24,8 +26,14 @@ class REDQ:
         # Optimizers
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr = 3e-4)
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr = 3e-4)
-        # Temperature (entropy regularization coefficient)
-        self.alpha = 0.2
+        # The target entropy is heuristically set to -dim(A)
+        self.target_entropy = -float(action_dim)
+        # We optimize log_alpha instead of alpha to ensure alpha is always positive
+        self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
+        self.alpha_optimizer = optim.Adam([self.log_alpha], lr=3e-4)
+        
+        # We still keep a self.alpha property for convenience in equations
+        self.alpha = self.log_alpha.exp().item()
 
     
     def select_action(self, state):
@@ -52,7 +60,7 @@ class REDQ:
                 next_actions, next_logs_probs = self.actor.sample(next_states)
                 # Get target Q-values from the target critic
                 all_targets = self.critic_target(next_states, next_actions)
-                random_indices = np.random.choice(all_targets.shape[0], size=2, replace=False)
+                random_indices = np.random.choice(all_targets.shape[0], size=self.subset_size, replace=False)                
                 target_Q1, target_Q2 = all_targets[random_indices[0]], all_targets[random_indices[1]]
                 min_target_Q = torch.min(target_Q1, target_Q2)
                 # Target value wth ENTROPY REGULARIZATION (Bellman Equation witj Entropy term)
@@ -87,7 +95,18 @@ class REDQ:
             actor_loss.backward()
             self.actor_optimizer.step()
 
-            # OPTIMIZATION --> Unfreeze Critic for the next loop ---
+            # ALPHA UPDATE
+            # We use the log_probs from the actor update
+            alpha_loss = -(self.log_alpha * (log_probs + self.target_entropy).detach()).mean()
+
+            self.alpha_optimizer.zero_grad()
+            alpha_loss.backward()
+            self.alpha_optimizer.step()
+
+            # Update the alpha value for the next iteration's Bellman equations
+            self.alpha = self.log_alpha.exp().item()
+
+            # OPTIMIZATION --> Unfreeze Critic for the next loop
             for param in self.critic.parameters():
                 param.requires_grad = True
 

@@ -22,7 +22,7 @@ class individual_Critic(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, state_dim, action_dim, max_action, hidden_dim = 256, num_critics = 10):
+    def __init__(self, state_dim, action_dim, max_action, hidden_dim = 256, num_critics = 2):
         super(Critic, self).__init__()
 
         #######
