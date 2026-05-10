@@ -61,3 +61,7 @@ Thumbs.db
 # Python project metadata
 .python-version
 pyproject.toml
+
+XXX_logs/
+XXX_videos/
+XXX_report/
