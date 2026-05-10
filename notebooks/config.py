@@ -3,17 +3,17 @@ import torch
 import os
 
 # GENERAL SETTINGS 
-ENV_NAMES = ["BipedalWalker-v3", "Pusher-v5"] 
+ENV_NAMES = [ "Hopper-v5", "BipedalWalker-v3"] 
 DEVICE = torch.device("mps")  
 
 # TRAINING HYPERPARAMETERS
-MAX_TIMESTEPS = 300000        
+MAX_TIMESTEPS = 300000 # Canviar manualment en el Bipedal per 150k 
 START_TIMESTEPS = 5000
 BATCH_SIZE = 256
 
 # EVALUATION SETTINGS 
-NUM_SEEDS = 3            
-EVAL_FREQ = 10000        
+NUM_SEEDS = 1      
+EVAL_FREQ = 5000        
 EVAL_EPISODES = 3        
 EVAL_STEPS = MAX_TIMESTEPS // EVAL_FREQ 
 
@@ -37,13 +37,6 @@ EXP_ROBUSTNESS_N = {
     "REDQ (N=2) Unstable": {"N": 2, "M": 2, "G": 20, "color": "purple"},
     "REDQ Standard (N=10)": {"N": 10, "M": 2, "G": 20, "color": "blue"}
 }
-
-# 4. Overestimation Analysis: The Subset (M)
-EXP_OVERESTIMATION_M = {
-    "REDQ Standard (M=2)": {"N": 10, "M": 2, "G": 20, "color": "blue"},
-    "REDQ (M=5) Conservative": {"N": 10, "M": 5, "G": 20, "color": "brown"}
-}
-
 
 # PATHS
 os.makedirs("videos", exist_ok=True)

@@ -4,7 +4,6 @@ import numpy as np
 
 
 def save_raw_logs(returns_dict, times_dict, biases_dict, exp_config, env_name, max_steps, eval_freq, exp_name):
-    """Guarda las métricas por timestep y un resumen de los tiempos de ejecución."""
     os.makedirs("logs", exist_ok=True)
     
     timesteps_axis = np.arange(0, max_steps, eval_freq)
@@ -18,7 +17,6 @@ def save_raw_logs(returns_dict, times_dict, biases_dict, exp_config, env_name, m
             'Mean_Bias': biases_dict[algo].mean(axis=0),
             'Std_Bias': biases_dict[algo].std(axis=0)
         })
-        # Añadimos exp_name al nombre del CSV
         filename = f"logs/{exp_name}_{env_name}_{safe_algo}_metrics.csv"
         df_logs.to_csv(filename, index=False)
         print(f"Saved: {filename}")
@@ -34,7 +32,6 @@ def save_raw_logs(returns_dict, times_dict, biases_dict, exp_config, env_name, m
         })
         
     df_times = pd.DataFrame(times_data)
-    # Añadimos exp_name al nombre del CSV de tiempos
     times_filename = f"logs/{exp_name}_{env_name}_execution_times.csv"
     df_times.to_csv(times_filename, index=False)
     print(f"Saved: {times_filename}")
